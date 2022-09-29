@@ -104,7 +104,6 @@ function spinner() {
         local i=$(((i + $charwidth) % ${#spin}))
         local loading="Loading"    
         printf "%s" "${spin:$i:$charwidth}"
-
         cursorBack 1
         sleep .1
     done
@@ -135,7 +134,7 @@ function get_author_param() {
 
 function get_author_first_commit_date() {
     author=$(get_author_param $1)
-    first_commit_date=$(git log --reverse --author=$author --date=short | grep "Date" | head -n1 | sed "s/Date:[[:space:]]\{3\}//g")
+    first_commit_date=$(git log --all --reverse --author=$author --date=short | grep "Date" | head -n1 | sed "s/Date:[[:space:]]\{3\}//g")
     echo "${first_commit_date}"
 }
 
@@ -174,7 +173,7 @@ function get_author_commit_count() {
     [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local count=$(git log --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    local count=$(git log --all --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
     [ -z "$count" ] && echo "[]"
     echo "${count}"
 }
@@ -189,7 +188,7 @@ function get_author_commit_dates() {
     [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
     ! [ -z $before ] && before="--before=$before" 
 
-    local dates=$(git log --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    local dates=$(git log --all --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
     [ -z "$dates" ] && echo "[]"
     echo "${dates}"
 }
@@ -213,7 +212,7 @@ function get_author_commit_messages() {
     [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local messages=$(git log --author=${author} --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local messages=$(git log --all --author=${author} --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${messages}"
 }
 
@@ -228,7 +227,7 @@ function get_top_modified_files() {
     [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local files=$(git log --author=${author} --pretty=format: $after $before --name-only | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local files=$(git log --all --author=${author} --pretty=format: $after $before --name-only | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${files}"
 }
 
@@ -242,7 +241,7 @@ function get_author_deletions() {
     [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local logs=$(git log --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
+    local logs=$(git log --all --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
@@ -256,7 +255,7 @@ function get_author_insertions() {
     [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local logs=$(git log --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
+    local logs=$(git log --all --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
@@ -551,4 +550,4 @@ while getopts ":a:t:hA:B:" options; do
     esac
 done
 
-main $AUTHOR $THEME $AFTER $BEFORE & spinner $! && exit 0
+main "${AUTHOR}" $THEME $AFTER $BEFORE & spinner $! && exit 0
