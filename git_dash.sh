@@ -7,6 +7,13 @@
 # https://stackoverflow.com/questions/1828874/generating-statistics-from-git-repository
 # https://google.github.io/styleguide/shellguide.html
 
+#######################################
+# Constants
+#######################################
+
+AUTHOR_NOT_SET="AUTHOR_NOT_SET"
+BEFORE_NOT_SET="BEFORE_NOT_SET"
+AFTER_NOT_SET="AFTER_NOT_SET"
 
 #######################################
 # Helper functions
@@ -34,27 +41,37 @@ function get_repo_file_count() {
     echo $(git ls-files | wc -l)
 }
 
-function get_author_first_commit_date() {
+function get_author_param() {
     author="$1"
+    if [ $author = "${AUTHOR_NOT_SET}" ]; then
+        author=""
+    fi 
+    echo "${author}"
+}
+
+function get_author_first_commit_date() {
+    author=$(get_author_param $1)
     first_commit_date=$(git log --reverse --author=$author --date=short | grep "Date" | head -n1 | sed "s/Date:[[:space:]]\{3\}//g")
     echo "${first_commit_date}"
 }
 
 function get_author_last_commit_date() {
-    local author=$1
+    local author=$(get_author_param $1)
     local out=$(git log --format=%cs --author=$author -n 1)
     echo "${out}"
 }
 
-function get_author_commit_count() {
-    local author=$1
-    local count=$(git log --date=short --pretty=format:%ad --author=$author | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
-    echo "${count}"
-}
-
 function get_authors() {
     local count=$1
-    local authors=$(git shortlog -s -n -e | head -n $count | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
+    local after=$2
+    local before=$3
+
+    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
+    local authors=$(git shortlog $after $before -s -n -e | head -n $count | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
     echo "${authors}"
 }
 
@@ -63,42 +80,99 @@ function get_author_count() {
     echo "${count}"
 }
 
+function get_author_commit_count() {
+    local author=$(get_author_param $1)
+    local after=$2
+    local before=$3
+
+    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
+    local count=$(git log --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    [ -z "$count" ] && echo "[]"
+    echo "${count}"
+}
+
 function get_author_commit_dates() {
-    local author=$1
-    local dates=$(git log --date=short --pretty=format:%ad --author=$author | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    local author=$(get_author_param $1)
+    local after=$2
+    local before=$3
+
+    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    ! [ -z $before ] && before="--before=$before" 
+
+    local dates=$(git log --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    [ -z "$dates" ] && echo "[]"
     echo "${dates}"
 }
 
 function get_author_commit_count_since() {
     local date=$1
-    local author=$2
+    local author=$(get_author_param $2)
+
     local count=$(git rev-list HEAD --count --after=${date} --author=${author})
     echo "${count}"
 }
 
 function get_author_commit_messages() {
-    local author=$1
+    local author=$(get_author_param $1)
     local count=$2
-    local messages=$(git log --author=${author} --pretty=oneline --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local after=$3
+    local before=$4
+
+    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
+    local messages=$(git log --author=${author} --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${messages}"
 }
 
 function get_top_modified_files() {
-    local author=$1
+    local author=$(get_author_param $1)
     local count=$2
-    local files=$(git log --author=${author} --pretty=format: --name-only | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local after=$3
+    local before=$4
+
+    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
+    local files=$(git log --author=${author} --pretty=format: $after $before --name-only | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${files}"
 }
 
 function get_author_deletions() {
-    local author=$1
-    local logs=$(git log --author=$author --shortstat --pretty=tformat: | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
+    local author=$(get_author_param $1)
+    local after=$2
+    local before=$3
+
+    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
+    local logs=$(git log --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
 function get_author_insertions() {
-    local author=$1
-    local logs=$(git log --author=$author --shortstat --pretty=tformat: | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
+    local author=$(get_author_param $1)
+    local after=$2
+    local before=$3
+
+    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
+    local logs=$(git log --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
@@ -107,9 +181,9 @@ function main() {
     # has_dependencies python "https://docs.python.org/3/"
 
     # args
-    theme='dark'
-    if [ -z "$1" ]; then
-        :
+    local theme='dark'
+    if [ "$1" = "${AUTHOR_NOT_SET}" ]; then
+        author=$AUTHOR_NOT_SET
     else
         author="$1"
     fi
@@ -118,6 +192,9 @@ function main() {
     else
         theme="$2"
     fi
+
+    local after="$3"
+    local before="$4"
     
     local first_commit_date=$(get_author_first_commit_date $author)
     if [ -z "${first_commit_date}" ]
@@ -127,11 +204,11 @@ function main() {
         local repo_name=$(get_repo_name)
         local repo_file_count=$(get_repo_file_count)
         local author=$(echo $author)
-        local authors=$(get_authors 100)
+        local authors=$(get_authors 100 $after $before)
         local author_count=$(get_author_count)
         local authorLastCommitDate=$(get_author_last_commit_date $author)
-        local dates=$(get_author_commit_dates $author)
-        local commits=$(get_author_commit_count $author)
+        local dates=$(get_author_commit_dates $author $after $before)
+        local commits=$(get_author_commit_count $author $after $before)
         local last_week_date=$(date -v-7d "+%Y-%m-%d")
         local last_month_date=$(date -v-1m "+%Y-%m-%d")
         local last_year_date=$(date -v-1y "+%Y-%m-%d")
@@ -140,10 +217,10 @@ function main() {
         local monthly_commits=$(get_author_commit_count_since $last_month_date $author)
         local yearly_commits=$(get_author_commit_count_since $last_year_date $author)
         local last_commits=$(git log --pretty=oneline --no-merges -n8)
-        local deletions=$(get_author_deletions $author)
-        local insertions=$(get_author_insertions $author)
-        local commit_messages=$(get_author_commit_messages "$author" 100)
-        local log_top_file=$(get_top_modified_files "$author" 18)
+        local deletions=$(get_author_deletions $author $after $before)
+        local insertions=$(get_author_insertions $author $after $before)
+        local commit_messages=$(get_author_commit_messages "$author" 100 $after $before)
+        local log_top_file=$(get_top_modified_files "$author" 100 $after $before)
 
 read -r -d '' pythonScript <<- EOM
 import plotext as plt
@@ -162,6 +239,7 @@ week_ago = today - DT.timedelta(days=7)
 repo_name = '${repo_name}'
 repo_file_count = '${repo_file_count}'
 author = '${author}'
+authorNotSet = '${AUTHOR_NOT_SET}'
 author_count = '${author_count}'
 total_commits = '${total_commits}'
 authorLastCommitDate = '${authorLastCommitDate}'
@@ -219,7 +297,11 @@ plt.subplot(1, 2).subplot(2, 1).subplots(1,2)
 
 ## GRAPH COMMIT HISTORY
 plt.subplot(1, 1).subplot(1, 1)
-maxY = max(commits) + 1
+if len(commits) == 0 :
+    maxY = 1
+else:
+    maxY = max(commits) + 1
+
 yRange = list(range(0, maxY, 1))
 plt.yticks(yRange)
 plt.yfrequency(1)
@@ -232,7 +314,11 @@ plt.ylim(1, maxY)
 height = plt.figure._size[1]
 # print(height)
 
-plt.bar(dates, commits, marker = 'sd')
+if len(commits) == 0 :
+    plt.bar([], [], marker = 'sd')
+else:
+    plt.bar(dates, commits, marker = 'sd')
+
 plt.title('Commit history')
 plt.xlabel('')
 plt.ylabel('')
@@ -260,7 +346,10 @@ plt.subplot(1, 2).subplot(2, 1).subplot(1, 1)
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
 plt.xfrequency(0)
-genaral_info=f'Repository: {repo_name}\nAuthor: {author}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}\nFiles #: {repo_file_count}'
+if author == authorNotSet:
+    genaral_info=f'Repository: {repo_name}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}\nFiles #: {repo_file_count}'
+else:
+    genaral_info=f'Repository: {repo_name}\nAuthor: {author}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}\nFiles #: {repo_file_count}'
 plt.text(genaral_info, 1, 1, alignment = 'left')
 
 ## AUTHORS
@@ -330,11 +419,13 @@ EOM
 
 function usage() {
     __usage="
-    Usage: $0 [ -n NAME ] [ -t THEME ]
+    Usage: $0 [ -n NAME ] [ -t THEME ] [ -A AFTER_DATE ] [ -B BEFORE_DATE ]
 
     Options:
-    -a <author>       Git author (email)
-    -t <theme>        Theme: 'default'|'clear'|'pro'|'matrix'|'windows'|'dark'|'retro'|'elegant'|'mature'|'dreamland'|'grandpa'|'salad'|'girly'|'serious'|'sahara'|'scream'
+    -a <author>       Git author (optional)
+    -t <theme>        Theme (optional, default 'dark'): 'default'|'clear'|'pro'|'matrix'|'windows'|'dark'|'retro'|'elegant'|'mature'|'dreamland'|'grandpa'|'salad'|'girly'|'serious'|'sahara'|'scream'
+    -A <after>        More recent than a specific date (YYYY-MM-DD)
+    -B <before>       Older than a specific date (YYYY-MM-DD)
     -h                Help
     "
     echo "$__usage" 1>&2
@@ -345,16 +436,24 @@ function exit_abnormal() {
     exit 1
 }
 
-AUTHOR=""
+AUTHOR="${AUTHOR_NOT_SET}"
 THEME="dark"
+AFTER="${AFTER_NOT_SET}"
+BEFORE="${BEFORE_NOT_SET}"
 
-while getopts ":a:t:h" options; do
+while getopts ":a:t:hA:B:" options; do
     case "${options}" in
         a)
         AUTHOR=${OPTARG}
         ;;
         t)
         THEME=${OPTARG}
+        ;;
+        A)
+        AFTER=${OPTARG}
+        ;;
+        B)
+        BEFORE=${OPTARG}
         ;;
         h)
         exit_abnormal
@@ -368,7 +467,4 @@ while getopts ":a:t:h" options; do
     esac
 done
 
-
-[ -n "$AUTHOR" ] && main $AUTHOR $THEME && exit 0
-[ -z "$AUTHOR" ] && main " " $THEME && exit 0
-
+main $AUTHOR $THEME $AFTER $BEFORE && exit 0

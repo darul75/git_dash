@@ -42,11 +42,13 @@ Supported options:
 ./git_dash.sh -h
 ```
 
-    Usage: ./git_dash.sh [ -n NAME ] [ -t THEME ]
+    Usage: ./git_dash.sh [ -n NAME ] [ -t THEME ] [ -A AFTER_DATE ] [ -B BEFORE_DATE ]
 
     Options:
     -a <author>       Git author (optional)
     -t <theme>        Theme (optional, default 'dark'): 'default'|'clear'|'pro'|....'
+    -A <after>        More recent than a specific date (YYYY-MM-DD)
+    -B <before>       Older than a specific date (YYYY-MM-DD)
     -h                Help
 
 ## Installation
@@ -74,14 +76,14 @@ bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash
 ##########################################################################################
 #                                       #           #           #           #            #
 #                                       #   Weekly  #  Monthly  #  Yearly   # Ins vs Del #
-#  Graph commit history                 #           #           #           #   (since)  #
+#         Graph commit history          #           #           #           #   (since)  #
 #                                       #           #           #           #  beginning #
 #                                       ##################################################
 #                                       #                       #                        #
 #                                       #                       #                        #
-#      (since very beginning)           #       General info    #      Top Authors       #
+#                                       #       General info    #      Top Authors       #
 #                                       #                       #                        #
-#                                       #                       #      (since beginning) #
+#                                       #                       #                        #
 #                                       ##################################################
 #                                       #                                                #
 #                                       #                                                #
@@ -99,7 +101,7 @@ bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash
 #                                       #                                                #
 #        Graph Ins vs Del               #                  Top files edited              #
 #                                       #                                                #
-#         (since very beginning)        #                                                #
+#                                       #                     (max 100)                  #
 ##########################################################################################
 ```
 
@@ -111,5 +113,6 @@ Shout to the author of [Plotext](https://github.com/piccolomo/plotext) who helpe
 
 ## Coming
 
-- [ ] since and between date options
+- [X] after and before date options
+- [ ] display loader for large repository history
 
