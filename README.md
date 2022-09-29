@@ -114,5 +114,5 @@ Shout to the author of [Plotext](https://github.com/piccolomo/plotext) who helpe
 ## Coming
 
 - [X] after and before date options
-- [ ] display loader for large repository history
+- [X] display loader for large repository history
 

@@ -6,6 +6,7 @@
 
 # https://stackoverflow.com/questions/1828874/generating-statistics-from-git-repository
 # https://google.github.io/styleguide/shellguide.html
+# https://unix.stackexchange.com/questions/225179/display-spinner-while-waiting-for-some-process-to-finish
 
 #######################################
 # Constants
@@ -27,6 +28,89 @@ function has_dependencies() {
         printf "\nError: $cmd is not installed. \n\nSee $docs\n\n" >&2
         exit 1
     fi
+}
+
+function shutdown() {
+    tput cnorm # reset cursor
+}
+trap shutdown EXIT
+
+function cursorBack() {
+    echo -en "\033[$1D"
+}
+
+function spinner() {
+    # make sure we use non-unicode character type locale 
+    # (that way it works for any locale as long as the font supports the characters)
+    local LC_CTYPE=C
+
+    local pid=$1 # Process Id of the previous running command
+
+    case $(($RANDOM % 12)) in
+    0)
+        local spin='⠁⠂⠄⡀⢀⠠⠐⠈'
+        local charwidth=3
+        ;;
+    1)
+        local spin='-\|/'
+        local charwidth=1
+        ;;
+    2)
+        local spin="▁▂▃▄▅▆▇█▇▆▅▄▃▂▁"
+        local charwidth=3
+        ;;
+    3)
+        local spin="▉▊▋▌▍▎▏▎▍▌▋▊▉"
+        local charwidth=3
+        ;;
+    4)
+        local spin='←↖↑↗→↘↓↙'
+        local charwidth=3
+        ;;
+    5)
+        local spin='▖▘▝▗'
+        local charwidth=3
+        ;;
+    6)
+        local spin='┤┘┴└├┌┬┐'
+        local charwidth=3
+        ;;
+    7)
+        local spin='◢◣◤◥'
+        local charwidth=3
+        ;;
+    8)
+        local spin='◰◳◲◱'
+        local charwidth=3
+        ;;
+    9)
+        local spin='◴◷◶◵'
+        local charwidth=3
+        ;;
+    10)
+        local spin='◐◓◑◒'
+        local charwidth=3
+        ;;
+    11)
+        local spin='⣾⣽⣻⢿⡿⣟⣯⣷'
+        local charwidth=3
+        ;;
+    esac
+
+    local i=0
+    tput civis # cursor invisible
+    # printf "%s" "Loading "
+    while kill -0 $pid 2>/dev/null; do
+        local i=$(((i + $charwidth) % ${#spin}))
+        local loading="Loading"    
+        printf "%s" "${spin:$i:$charwidth}"
+
+        cursorBack 1
+        sleep .1
+    done
+    tput cnorm
+    wait $pid # capture exit code
+    return $?
 }
 
 #######################################
@@ -71,12 +155,12 @@ function get_authors() {
     [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local authors=$(git shortlog $after $before -s -n -e | head -n $count | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
+    local authors=$(git log --pretty="%an %ae%n%cn %ce" $after $before | sort | uniq -c | sort | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
     echo "${authors}"
 }
 
 function get_author_count() {
-    local count=$(git shortlog -s -n | wc -l | awk '{$1=$1};1')
+    local count=$(git log --format='%ae' | sort -u | wc -l | awk '{$1=$1};1')
     echo "${count}"
 }
 
@@ -357,7 +441,7 @@ plt.subplot(1, 2).subplot(2, 1).subplot(1, 2)
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
 plt.xfrequency(0)
-authors = '\n'.join(authors)
+authors = '\n'.join(reversed(authors))
 plt.text(authors, 1, 1, alignment = 'left')
 # print(plt.subplot(1, 2).subplot(2, 1).figure._size)
 
@@ -467,4 +551,4 @@ while getopts ":a:t:hA:B:" options; do
     esac
 done
 
-main $AUTHOR $THEME $AFTER $BEFORE && exit 0
+main $AUTHOR $THEME $AFTER $BEFORE & spinner $! && exit 0
