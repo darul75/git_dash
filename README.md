@@ -53,7 +53,7 @@ Supported options:
 
 ## Installation
 
-Pre requisites are Git/Python installed and the following package dependency `plotext`.
+Pre requisites are Git/Python installed and the following package dependency `plotext`. You can find install instructions for `plotext` [here](https://github.com/piccolomo/plotext#install). 
 
 If you prefer cloning this repo, setting an alias it is up to you.
 
