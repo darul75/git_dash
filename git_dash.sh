@@ -125,7 +125,7 @@ function get_repo_file_count() {
 }
 
 function get_author_param() {
-    author="$1"
+    local author="$1"
     if [ $author = "${AUTHOR_NOT_SET}" ]; then
         author=""
     fi 
@@ -133,14 +133,30 @@ function get_author_param() {
 }
 
 function get_author_first_commit_date() {
-    author=$(get_author_param $1)
-    first_commit_date=$(git log --all --reverse --author=$author --date=short | grep "Date" | head -n1 | sed "s/Date:[[:space:]]\{3\}//g")
+    local author=$(get_author_param $1)
+    local after=$2
+    local before=$3
+
+    [ $after = $AFTER_NOT_SET ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ $before = $BEFORE_NOT_SET ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
+    first_commit_date=$(git log --all --reverse --author="$author" $after $before --date=short | grep "Date" | head -n1 | sed "s/Date:[[:space:]]\{3\}//g")
     echo "${first_commit_date}"
 }
 
 function get_author_last_commit_date() {
+    local after=$2
+    local before=$3
+
+    [ $after = $AFTER_NOT_SET ] && after=""
+    ! [ -z $after ] && after="--after=$after"
+    [ $before = $BEFORE_NOT_SET ] && before=""
+    ! [ -z $before ] && before="--before=$before"
+
     local author=$(get_author_param $1)
-    local out=$(git log --format=%cs --author=$author -n 1)
+    local out=$(git log --format=%cs --author="$author" $after $before -n 1)
     echo "${out}"
 }
 
@@ -149,9 +165,9 @@ function get_authors() {
     local after=$2
     local before=$3
 
-    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    [ $after = $AFTER_NOT_SET ] && after=""
     ! [ -z $after ] && after="--after=$after"
-    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
     local authors=$(git log --pretty="%an %ae%n%cn %ce" $after $before | sort | uniq -c | sort | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
@@ -168,12 +184,14 @@ function get_author_commit_count() {
     local after=$2
     local before=$3
 
-    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    [ $after = $AFTER_NOT_SET ] && after=""
     ! [ -z $after ] && after="--after=$after"
-    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local count=$(git log --all --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    # echo $after
+
+    local count=$(git log --all --date=short --pretty=format:%ad --author="$author" $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
     [ -z "$count" ] && echo "[]"
     echo "${count}"
 }
@@ -183,12 +201,12 @@ function get_author_commit_dates() {
     local after=$2
     local before=$3
 
-    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    [ $after = $AFTER_NOT_SET ] && after=""
     ! [ -z $after ] && after="--after=$after"
-    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before" 
 
-    local dates=$(git log --all --date=short --pretty=format:%ad --author=$author $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    local dates=$(git log --all --date=short --pretty=format:%ad --author="$author" $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
     [ -z "$dates" ] && echo "[]"
     echo "${dates}"
 }
@@ -197,7 +215,7 @@ function get_author_commit_count_since() {
     local date=$1
     local author=$(get_author_param $2)
 
-    local count=$(git rev-list HEAD --count --after=${date} --author=${author})
+    local count=$(git rev-list HEAD --count --after=${date} --author="$author")
     echo "${count}"
 }
 
@@ -207,9 +225,9 @@ function get_author_commit_messages() {
     local after=$3
     local before=$4
 
-    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    [ $after = $AFTER_NOT_SET ] && after=""
     ! [ -z $after ] && after="--after=$after"
-    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
     local messages=$(git log --all --author=${author} --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
@@ -222,9 +240,9 @@ function get_top_modified_files() {
     local after=$3
     local before=$4
 
-    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    [ $after = $AFTER_NOT_SET ] && after=""
     ! [ -z $after ] && after="--after=$after"
-    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
     local files=$(git log --all --author=${author} --pretty=format: $after $before --name-only | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
@@ -236,12 +254,12 @@ function get_author_deletions() {
     local after=$2
     local before=$3
 
-    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    [ $after = $AFTER_NOT_SET ] && after=""
     ! [ -z $after ] && after="--after=$after"
-    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local logs=$(git log --all --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
+    local logs=$(git log --all --author=${author} --shortstat --pretty=tformat: $after $before  | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
@@ -250,12 +268,12 @@ function get_author_insertions() {
     local after=$2
     local before=$3
 
-    [ "$after" = "${AFTER_NOT_SET}" ] && after=""
+    [ $after = $AFTER_NOT_SET ] && after=""
     ! [ -z $after ] && after="--after=$after"
-    [ "$before" = "${BEFORE_NOT_SET}" ] && before=""
+    [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local logs=$(git log --all --author=$author --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
+    local logs=$(git log --all --author="$author" --shortstat --pretty=tformat:  | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
@@ -270,6 +288,7 @@ function main() {
     else
         author="$1"
     fi
+
     if [ -z "$2" ]; then
         :
     else
@@ -278,8 +297,8 @@ function main() {
 
     local after="$3"
     local before="$4"
-    
-    local first_commit_date=$(get_author_first_commit_date $author)
+
+    local first_commit_date=$(get_author_first_commit_date "$author" "$after" "$before")
     if [ -z "${first_commit_date}" ]
     then
         echo "Author '${author}' not found in git, try again!"
@@ -287,23 +306,24 @@ function main() {
         local repo_name=$(get_repo_name)
         local repo_file_count=$(get_repo_file_count)
         local author=$(echo $author)
-        local authors=$(get_authors 100 $after $before)
+        local authorLastCommitDate=$(get_author_last_commit_date "$author" "$after" "$before")
         local author_count=$(get_author_count)
-        local authorLastCommitDate=$(get_author_last_commit_date $author)
-        local dates=$(get_author_commit_dates $author $after $before)
-        local commits=$(get_author_commit_count $author $after $before)
+        local authors=$(get_authors 100 "$after" "$before")
+        local dates=$(get_author_commit_dates "$author" "$after" "$before")
+        local commits=$(get_author_commit_count "$author" "$after" "$before")
         local last_week_date=$(date -v-7d "+%Y-%m-%d")
         local last_month_date=$(date -v-1m "+%Y-%m-%d")
         local last_year_date=$(date -v-1y "+%Y-%m-%d")
-        local total_commits=$(get_author_commit_count_since $first_commit_date $author)
-        local weekly_commits=$(get_author_commit_count_since $last_week_date $author)
-        local monthly_commits=$(get_author_commit_count_since $last_month_date $author)
-        local yearly_commits=$(get_author_commit_count_since $last_year_date $author)
+        local total_commits=$(get_author_commit_count_since $first_commit_date "$author")
+        local weekly_commits=$(get_author_commit_count_since $last_week_date "$author")
+        local monthly_commits=$(get_author_commit_count_since $last_month_date "$author")
+        local yearly_commits=$(get_author_commit_count_since $last_year_date "$author")
         local last_commits=$(git log --pretty=oneline --no-merges -n8)
-        local deletions=$(get_author_deletions $author $after $before)
-        local insertions=$(get_author_insertions $author $after $before)
-        local commit_messages=$(get_author_commit_messages "$author" 100 $after $before)
-        local log_top_file=$(get_top_modified_files "$author" 100 $after $before)
+        local deletions=$(get_author_deletions "$author" $after $before)
+        # echo $deletions
+        local insertions=$(get_author_insertions "$author" $after $before)
+        local commit_messages=$(get_author_commit_messages "$author" 100 "$after" "$before")
+        local log_top_file=$(get_top_modified_files "$author" 100 "$after" "$before")
 
 read -r -d '' pythonScript <<- EOM
 import plotext as plt
@@ -424,15 +444,15 @@ plt.subplot(1, 2).subplot(1, 1).subplot(1, 4)
 plt.indicator(f'{sumInsertions}/{sumDeletions}', 'Insertions vs deletions', color = _theme[current_theme][2])
 
 ## GENERAL INFO
-plt.subplot(1, 2).subplot(2, 1).plot_size(None, 8)
+plt.subplot(1, 2).subplot(2, 1).plot_size(None, 9)
 plt.subplot(1, 2).subplot(2, 1).subplot(1, 1)
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
 plt.xfrequency(0)
 if author == authorNotSet:
-    genaral_info=f'Repository: {repo_name}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}\nFiles #: {repo_file_count}'
+    genaral_info=f'Repository: {repo_name}\nFiles #: {repo_file_count}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}'
 else:
-    genaral_info=f'Repository: {repo_name}\nAuthor: {author}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}\nFiles #: {repo_file_count}'
+    genaral_info=f'Repository: {repo_name}\nFiles #: {repo_file_count}\nAuthor: {author}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}'
 plt.text(genaral_info, 1, 1, alignment = 'left')
 
 ## AUTHORS
@@ -550,4 +570,4 @@ while getopts ":a:t:hA:B:" options; do
     esac
 done
 
-main "${AUTHOR}" $THEME $AFTER $BEFORE & spinner $! && exit 0
+main "${AUTHOR}" "${THEME}" "${AFTER}" "${BEFORE}" & spinner $! && exit 0
