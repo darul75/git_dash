@@ -230,7 +230,7 @@ function get_author_commit_messages() {
     [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local messages=$(git log --all --author=${author} --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local messages=$(git log --all --author="$author" --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${messages}"
 }
 
@@ -245,7 +245,7 @@ function get_top_modified_files() {
     [ $before = $BEFORE_NOT_SET ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
-    local files=$(git log --all --author=${author} --pretty=format: $after $before --name-only | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local files=$(git log --all --name-only --author="$author" --pretty=format: $after $before | awk NF | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${files}"
 }
 
