@@ -169,11 +169,10 @@ function get_author_last_commit_date() {
 }
 
 function get_authors() {
-    local count=$1
-    local after=$(get_after_git_param $2)
-    local before=$(get_before_git_param $3)
+    local after=$(get_after_git_param $1)
+    local before=$(get_before_git_param $)
 
-    local authors=$(git log --pretty="%an %ae%n%cn %ce" $after $before | sort | uniq -c | sort | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
+    local authors=$(git log --pretty="%an <%ce>" $after $before | sort | uniq -c | sort | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
     echo "${authors}"
 }
 
@@ -279,7 +278,7 @@ function main() {
         local author=$(echo $author)
         local authorLastCommitDate=$(get_author_last_commit_date "$author" "$after" "$before")
         local author_count=$(get_author_count)
-        local authors=$(get_authors 100 "$after" "$before")
+        local authors=$(get_authors "$after" "$before")
         local dates=$(get_author_commit_dates "$author" "$after" "$before")
         local commits=$(get_author_commit_count "$author" "$after" "$before")
         local last_week_date=$(date -v-7d "+%Y-%m-%d")
