@@ -126,16 +126,16 @@ function get_repo_file_count() {
 
 function get_author_param() {
     local author="$1"
-    if [ $author = "${AUTHOR_NOT_SET}" ]; then
+    if [ "$author" = "$AUTHOR_NOT_SET" ]; then
         author=""
     fi 
-    echo "${author}"
+    echo "$author"
 }
 
 function get_after_git_param() {
     local after="$1"
     
-    [ $after = $AFTER_NOT_SET ] && after=""
+    [ "$after" = "$AFTER_NOT_SET" ] && after=""
     ! [ -z $after ] && after="--after=$after"
 
     echo "${after}"
@@ -144,14 +144,14 @@ function get_after_git_param() {
 function get_before_git_param() {
     local before="$1"
     
-    [ $before = $BEFORE_NOT_SET ] && before=""
+    [ "$before" = "$BEFORE_NOT_SET" ] && before=""
     ! [ -z $before ] && before="--before=$before"
 
     echo "${before}"
 }
 
 function get_author_first_commit_date() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
@@ -160,7 +160,7 @@ function get_author_first_commit_date() {
 }
 
 function get_author_last_commit_date() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
@@ -169,7 +169,7 @@ function get_author_last_commit_date() {
 }
 
 function get_authors() {
-    local after=$(get_after_git_param $1)
+    local after=$(get_after_git_param "$1")
     local before=$(get_before_git_param $)
 
     local authors=$(git log --pretty="%an <%ce>" $after $before | sort | uniq -c | sort | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
@@ -182,7 +182,7 @@ function get_author_count() {
 }
 
 function get_author_commit_count() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
@@ -192,7 +192,7 @@ function get_author_commit_count() {
 }
 
 function get_author_commit_dates() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
@@ -202,15 +202,15 @@ function get_author_commit_dates() {
 }
 
 function get_author_commit_count_since() {
-    local date=$1
-    local author=$(get_author_param $2)
+    local after=$(get_after_git_param $1)
+    local author=$(get_author_param "$2")
 
-    local count=$(git rev-list HEAD --count --after=${date} --author="$author")
+    local count=$(git rev-list HEAD --count --author="$author" $after)
     echo "${count}"
 }
 
 function get_author_commit_messages() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local count=$2
     local after=$(get_after_git_param $3)
     local before=$(get_before_git_param $4)
@@ -220,7 +220,7 @@ function get_author_commit_messages() {
 }
 
 function get_top_modified_files() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local count=$2
     local after=$(get_after_git_param $3)
     local before=$(get_before_git_param $4)
@@ -230,20 +230,20 @@ function get_top_modified_files() {
 }
 
 function get_author_deletions() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
-    local logs=$(git log --all --author=${author} --shortstat --pretty=tformat: $after $before  | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
+    local logs=$(git log --all --author="$author" --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
 function get_author_insertions() {
-    local author=$(get_author_param $1)
+    local author=$(get_author_param "$1")
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
-    local logs=$(git log --all --author="$author" --shortstat --pretty=tformat:  | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
+    local logs=$(git log --all --author="$author" --shortstat --pretty=tformat: | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
