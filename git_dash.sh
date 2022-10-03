@@ -169,10 +169,9 @@ function get_author_last_commit_date() {
 }
 
 function get_authors() {
-    local after=$(get_after_git_param "$1")
-    local before=$(get_before_git_param $)
-
-    local authors=$(git log --pretty="%an <%ce>" $after $before | sort | uniq -c | sort | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
+    local after=$(get_after_git_param $1)
+    local before=$(get_before_git_param $2)
+    local authors=$(git log --pretty="%an" $after $before | sort | uniq -c | sort | awk '{$1=$1};1' | tr '\n' ',' | sed "s/\"//g" | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//' | sed "s/$/\]/")
     echo "${authors}"
 }
 
@@ -202,10 +201,11 @@ function get_author_commit_dates() {
 }
 
 function get_author_commit_count_since() {
-    local after=$(get_after_git_param $1)
-    local author=$(get_author_param "$2")
+    local author=$(get_author_param "$1")
+    local after=$(get_after_git_param $2)
+    local before=$(get_before_git_param $3)
 
-    local count=$(git rev-list HEAD --count --author="$author" $after)
+    local count=$(git rev-list HEAD --count --author="$author" $after $before)
     echo "${count}"
 }
 
@@ -278,19 +278,18 @@ function main() {
         local author=$(echo $author)
         local authorLastCommitDate=$(get_author_last_commit_date "$author" "$after" "$before")
         local author_count=$(get_author_count)
-        local authors=$(get_authors "$after" "$before")
+        ! [ "$after" = "$AFTER_NOT_SET" ] && first_commit_date="$after"
+        local authors=$(get_authors "$first_commit_date" "$before")
         local dates=$(get_author_commit_dates "$author" "$after" "$before")
         local commits=$(get_author_commit_count "$author" "$after" "$before")
         local last_week_date=$(date -v-7d "+%Y-%m-%d")
         local last_month_date=$(date -v-1m "+%Y-%m-%d")
         local last_year_date=$(date -v-1y "+%Y-%m-%d")
-        local total_commits=$(get_author_commit_count_since $first_commit_date "$author")
-        local weekly_commits=$(get_author_commit_count_since $last_week_date "$author")
-        local monthly_commits=$(get_author_commit_count_since $last_month_date "$author")
-        local yearly_commits=$(get_author_commit_count_since $last_year_date "$author")
-        local last_commits=$(git log --pretty=oneline --no-merges -n8)
+        local total_commits=$(get_author_commit_count_since "$author" "$first_commit_date" "$before")
+        local weekly_commits=$(get_author_commit_count_since "$author" "$last_week_date" "$before")
+        local monthly_commits=$(get_author_commit_count_since "$author" "$last_month_date" "$before")
+        local yearly_commits=$(get_author_commit_count_since "$author" "$last_year_date" "$before")
         local deletions=$(get_author_deletions "$author" $after $before)
-        # echo $deletions
         local insertions=$(get_author_insertions "$author" $after $before)
         local commit_messages=$(get_author_commit_messages "$author" 100 "$after" "$before")
         local log_top_file=$(get_top_modified_files "$author" 100 "$after" "$before")
@@ -425,7 +424,7 @@ else:
     genaral_info=f'Repository: {repo_name}\nFiles #: {repo_file_count}\nAuthor: {author}\nTotal authors: {author_count}\nTotal commits: {total_commits}\nFirst commit: {firstCommitDate}\nLast commit: {authorLastCommitDate}'
 plt.text(genaral_info, 1, 1, alignment = 'left')
 
-## AUTHORS
+## TOP AUTHORS
 plt.subplot(1, 2).subplot(2, 1).subplot(1, 2)
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
