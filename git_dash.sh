@@ -155,7 +155,9 @@ function get_author_first_commit_date() {
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
-    first_commit_date=$(git log --all --reverse --author="$author" $after $before --date=short | grep "Date" | head -n1 | sed "s/Date:[[:space:]]\{3\}//g")
+    # TODO: -all option?
+
+    first_commit_date=$(git log --reverse --author="$author" $after $before --date=short | grep "Date" | head -n1 | sed "s/Date:[[:space:]]\{3\}//g")
     echo "${first_commit_date}"
 }
 
@@ -185,7 +187,7 @@ function get_author_commit_count() {
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
-    local count=$(git log --all --date=short --pretty=format:%ad --author="$author" $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    local count=$(git log --date=short --pretty=format:%ad --author="$author" $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f1 | awk '{ printf "%s,", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
     [ -z "$count" ] && echo "[]"
     echo "${count}"
 }
@@ -195,7 +197,7 @@ function get_author_commit_dates() {
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
-    local dates=$(git log --all --date=short --pretty=format:%ad --author="$author" $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
+    local dates=$(git log --date=short --pretty=format:%ad --author="$author" $after $before | sort | uniq -c | awk '{$1=$1};1' | awk 'NR > 1 { printf("\n") } {printf "%s",$0}' | cut -d' ' -f2 | awk '{ printf "'\''%s'\','", $0 }' | sed "s/^/\[/" | sed "s/$/\]/")
     [ -z "$dates" ] && echo "[]"
     echo "${dates}"
 }
@@ -215,7 +217,7 @@ function get_author_commit_messages() {
     local after=$(get_after_git_param $3)
     local before=$(get_before_git_param $4)
 
-    local messages=$(git log --all --author="$author" --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local messages=$(git log --author="$author" --pretty=oneline $after $before --no-merges -n${count} | cut -d' ' -f 2- | tail -r -n ${count} | sed "s/\"//g" | sed "s/\"//g" | sed "s/,//g" | tr '\n' ','  | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${messages}"
 }
 
@@ -225,7 +227,7 @@ function get_top_modified_files() {
     local after=$(get_after_git_param $3)
     local before=$(get_before_git_param $4)
 
-    local files=$(git log --all --name-only --author="$author" --pretty=format: $after $before | awk NF | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
+    local files=$(git log --name-only --author="$author" --pretty=format: $after $before | awk NF | sort | uniq -c | sort -rg | head -n ${count} |  tail -r -n ${count} | tr '\n' ',' | sed "s/^/\[\"/" | sed "s/,/\",\"/g" | sed 's/.\{2\}$//'  | sed "s/$/\]/")
     echo "${files}"
 }
 
@@ -234,7 +236,7 @@ function get_author_deletions() {
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
-    local logs=$(git log --all --author="$author" --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
+    local logs=$(git log --author="$author" --shortstat --pretty=tformat: $after $before | grep deletion | grep insertion | sed 's/\(\d*\) deletions\{0,1\}(-)/\1/' | awk '{ print $NF }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
@@ -243,7 +245,7 @@ function get_author_insertions() {
     local after=$(get_after_git_param $2)
     local before=$(get_before_git_param $3)
 
-    local logs=$(git log --all --author="$author" --shortstat --pretty=tformat: | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
+    local logs=$(git log --author="$author" --shortstat --pretty=tformat: | grep deletion | grep insertion | sed 's/\(\d*\) insertion\{0,1\}(-)/\1/' | awk '{ print $4 }'  | tr '\n' ',')
     echo "[${logs}]"
 }
 
@@ -375,7 +377,14 @@ else:
     maxY = max(commits) + 1
 
 yRange = list(range(0, maxY, 1))
-plt.yticks(yRange)
+
+def stringigy_number(n):
+    return str(int(n))
+
+yRangeLabels = map(stringigy_number, yRange)
+
+# str(int(f))
+plt.yticks(yRange, yRangeLabels)
 plt.yfrequency(1)
 plt.date_form('Y-m-d')
 start = plt.string_to_datetime(firstCommitDate)
@@ -384,6 +393,7 @@ plt.ylim(1, maxY)
 
 # print(plt.subplot(1, 1)._get_subplot(1, 1)._size[1])
 height = plt.figure._size[1]
+
 # print(height)
 
 if len(commits) == 0 :
@@ -413,7 +423,8 @@ plt.subplot(1, 2).subplot(1, 1).subplot(1, 4)
 plt.indicator(f'{sumInsertions}/{sumDeletions}', 'Insertions vs deletions', color = _theme[current_theme][2])
 
 ## GENERAL INFO
-plt.subplot(1, 2).subplot(2, 1).plot_size(None, 9)
+plt.subplot(1, 2).subplot(2, 1).subplot(1, 1).title('General')
+plt.subplot(1, 2).subplot(2, 1).plot_size(None, 10)
 plt.subplot(1, 2).subplot(2, 1).subplot(1, 1)
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
@@ -425,16 +436,15 @@ else:
 plt.text(genaral_info, 1, 1, alignment = 'left')
 
 ## TOP AUTHORS
-plt.subplot(1, 2).subplot(2, 1).subplot(1, 2)
+plt.subplot(1, 2).subplot(2, 1).subplot(1, 2).title('Authors')
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
 plt.xfrequency(0)
 authors = '\n'.join(reversed(authors))
 plt.text(authors, 1, 1, alignment = 'left')
-# print(plt.subplot(1, 2).subplot(2, 1).figure._size)
 
 ## COMMITS LOGS
-plt.subplot(1, 2).subplot(3, 1)
+plt.subplot(1, 2).subplot(3, 1).title('Logs')
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
 plt.xfrequency(0)
@@ -443,8 +453,8 @@ logs = '\n'.join(reversed(commitLogs))
 plt.text(logs, 1, 1, alignment = 'left')
 
 ## TOP FILES
-plt.subplot(2, 2)
 plt.subplot(2, 2).plot_size(None, 20)
+plt.subplot(2, 2).title('Top files')
 plt.scatter([0, 1], marker = ' ')
 plt.yfrequency(0)
 plt.xfrequency(0)
@@ -453,6 +463,7 @@ plt.text(files, 1, 1, alignment = 'left')
 
 ## INS vs DEL
 plt.subplot(2, 1)
+
 if len(insertions) > 0 and len(deletions) > 0 :
     plt.stacked_bar(deletionsX, [insertions, deletions], label = ['Insertions', 'Deletions'], fill = None, minimum = 1)
 
