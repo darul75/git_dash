@@ -4,13 +4,13 @@ CLI script for generating a git metrics dashboard directly in your terminal.
 
 ## Examples
 
-React [Dan Abramov](https://github.com/yyx990803)
+React [Dan Abramov](https://github.com/gaearon)
 
-![React Dan Abramov](snaps/react_dan.png)
+![React Dan Abramov](snaps/react-dan-record.gif)
 
 Vuejs [Evan You](https://github.com/yyx990803)
 
-![React Dan Abramov](snaps/vue_yy.png)
+![Vue Evan You](snaps/vue_yy.png)
 
 # Usage
 
