@@ -53,26 +53,26 @@ Supported options:
 
 ## Installation
 
-Pre requisites are Git/Python installed and the following package dependency `plotext`. You can find install instructions for `plotext` [here](https://github.com/piccolomo/plotext#install).
+Pre requisites are Git/Python installed and all python libraries should be now automatically installed at first run.
 
-If you prefer cloning this repo, setting an alias it is up to you.
+If you prefer cloning this repo, setting up an alias it is up to you.
 
 **Or simply use this**
 
 ```shell
-bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash.sh)
+curl -sO https://raw.githubusercontent.com/darul75/git_dash/main/requirements.txt > /dev/null && bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash.sh)
 ```
 
 by **author**:
 
 ```shell
-bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash.sh) -a darul75@gmail.com
+curl -sO https://raw.githubusercontent.com/darul75/git_dash/main/requirements.txt > /dev/null && bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash.sh) -a darul75@gmail.com
 ```
 
 by **dates**:
 
 ```shell
-bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash.sh) -a darul75@gmail.com -A 2022-09-01 -B 2022-10-01
+curl -sO https://raw.githubusercontent.com/darul75/git_dash/main/requirements.txt > /dev/null && bash <(curl -sL https://raw.githubusercontent.com/darul75/git_dash/main/git_dash.sh) -a darul75@gmail.com -A 2022-09-01 -B 2022-10-01
 ```
 
 Options can be combined together and displayed stats dynamically adapted.

@@ -14,3 +14,9 @@
 ### Features
 
 * **Spinner:** display spinner while generating graph on big repository
+
+## [1.0.4](https://github.com/darul75/git_dash/releases/tag/v1.0.4) (2023-02-03)
+
+### Enhancements
+
+* **Install:** Better checks of Python and pip dependencies

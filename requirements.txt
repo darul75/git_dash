@@ -1,0 +1,5 @@
+plotext==5.2.8
+protobuf==4.21.8
+PyYAML==6.0
+shtab==1.5.5
+six==1.16.0

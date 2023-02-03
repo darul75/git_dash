@@ -7,6 +7,7 @@
 # https://stackoverflow.com/questions/1828874/generating-statistics-from-git-repository
 # https://google.github.io/styleguide/shellguide.html
 # https://unix.stackexchange.com/questions/225179/display-spinner-while-waiting-for-some-process-to-finish
+# https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html
 
 #######################################
 # Constants
@@ -26,8 +27,9 @@ function has_dependencies() {
     local docs=$2
     if ! [ -x "$(command -v ${cmd})" ]; then
         printf "\nError: $cmd is not installed. \n\nSee $docs\n\n" >&2
-        exit 1
+        return 1
     fi
+    return 0
 }
 
 function shutdown() {
@@ -250,8 +252,26 @@ function get_author_insertions() {
 }
 
 function main() {
-    has_dependencies git "https://git-scm.com/"
-    # has_dependencies python "https://docs.python.org/3/"
+    # git installed
+    if ! has_dependencies git "https://git-scm.com/"; then return 0; fi
+
+    # python installed
+    local pythonInstall=0
+    if command -v python > /dev/null
+    then
+        (( pythonInstall |= 1 ))
+        python -m pip install -r requirements.txt > /dev/null
+    fi
+    if command -v python3 > /dev/null
+    then
+        (( pythonInstall |= 1 ))
+        python3 -m pip install -r requirements.txt > /dev/null
+    fi
+
+    if [ $pythonInstall -eq 0 ]; then
+        echo "Error: please install Python or Python3"
+        exit 1
+    fi
 
     # args
     local theme='dark'
@@ -391,11 +411,6 @@ start = plt.string_to_datetime(firstCommitDate)
 end = plt.today_datetime()
 plt.ylim(1, maxY)
 
-# print(plt.subplot(1, 1)._get_subplot(1, 1)._size[1])
-height = plt.figure._size[1]
-
-# print(height)
-
 if len(commits) == 0 :
     plt.bar([], [], marker = 'sd')
 else:
@@ -474,16 +489,8 @@ EOM
         plotextDoc="https://pypi.org/project/plotext/"
 
         if ! [ -x "$(command -v python3)" ]; then
-            if [ -z "$(pip list | grep plotext)" ]; then
-                printf "\nError: Python 'plotext' dependency missing. \n\nSee $plotextDoc\n\n" >&2
-                exit 1 
-            fi
             python -c "${pythonScript}"
         else
-            if [ -z "$(pip3 list | grep plotext)" ]; then
-                printf "\nError: Python 'plotext' dependency missing. \n\nSee $plotextDoc\n\n" >&2
-                exit 1
-            fi
             python3 -c "${pythonScript}"
         fi
         res=$?
